@@ -90,12 +90,15 @@ class CartItem {
   /// Weight of this line item (all units) in kg
   double get lineWeightKg {
     if (isCombo && combo != null) {
-      // Sum weight of every product inside the combo × how many of each
-      final perUnit = combo!.products.fold<double>(
+      // Primary: sum weight of every product inside the combo
+      final fromProducts = combo!.products.fold<double>(
         0,
         (sum, item) => sum + parseWeightKg(item.weight) * item.quantity,
       );
-      return perUnit * quantity;
+      if (fromProducts > 0) return fromProducts * quantity;
+      // Fallback: combo-level weight field (e.g. API returns "2kg" on the combo)
+      final fromCombo = parseWeightKg(combo!.weight);
+      return fromCombo * quantity;
     }
     if (!isCombo && variant != null) {
       return parseWeightKg(variant!.weight) * quantity;

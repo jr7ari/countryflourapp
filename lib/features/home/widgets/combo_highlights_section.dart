@@ -232,7 +232,11 @@ class _ComboHighlightCard extends ConsumerWidget {
                   activeColor: Colors.white,
                   backgroundColor: AppColors.comboPrimary,
                   onAdd: () {
-                    ref.read(cartProvider.notifier).addCombo(combo);
+                    final result =
+                        ref.read(cartProvider.notifier).addCombo(combo);
+                    if (result == CartAddResult.weightExceeded) {
+                      showWeightExceededToast(context, ref);
+                    }
                   },
                 ),
               ),

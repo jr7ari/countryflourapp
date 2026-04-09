@@ -222,8 +222,12 @@ class _ComboCardState extends ConsumerState<ComboCard> {
                             activeColor: Colors.white,
                             backgroundColor: AppColors.comboPrimary,
                             onAdd: () {
-                              ref.read(cartProvider.notifier)
+                              final result = ref
+                                  .read(cartProvider.notifier)
                                   .addCombo(widget.combo);
+                              if (result == CartAddResult.weightExceeded) {
+                                showWeightExceededToast(context, ref);
+                              }
                             },
                           ),
                         ),

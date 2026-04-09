@@ -38,9 +38,12 @@ class Combo {
   final String name;
   final String description;
   final List<ComboProductItem> products;
-  final double mrp; // original total price
-  final double offerPrice; // discounted price
+  final double mrp;
+  final double offerPrice;
   final String img;
+  /// Raw weight string from API (e.g. "2kg", "2000g"). Used as fallback when
+  /// individual product weights are missing or unparseable.
+  final String weight;
 
   const Combo({
     required this.id,
@@ -50,10 +53,11 @@ class Combo {
     required this.mrp,
     required this.offerPrice,
     required this.img,
+    this.weight = '',
   });
 
   factory Combo.fromJson(Map<String, dynamic> json) => Combo(
-        id: json['id']?.toString() ?? '',
+        id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
         name: json['name']?.toString() ?? '',
         description: json['description']?.toString() ?? '',
         products: (json['products'] as List<dynamic>?)
@@ -62,7 +66,12 @@ class Combo {
             [],
         mrp: (json['mrp'] as num?)?.toDouble() ?? 0.0,
         offerPrice: (json['offerPrice'] as num?)?.toDouble() ?? 0.0,
-        img: json['img']?.toString() ?? '',
+        img: json['img']?.toString() ?? json['image']?.toString() ?? '',
+        // Try several field names the API might use for total weight
+        weight: json['weight']?.toString() ??
+            json['totalWeight']?.toString() ??
+            json['totalWeightKg']?.toString() ??
+            '',
       );
 
   Map<String, dynamic> toJson() => {
@@ -73,6 +82,7 @@ class Combo {
         'mrp': mrp,
         'offerPrice': offerPrice,
         'img': img,
+        'weight': weight,
       };
 
   /// Computed: discount percentage

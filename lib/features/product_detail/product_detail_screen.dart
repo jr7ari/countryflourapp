@@ -269,12 +269,17 @@ class _ProductDetailBody extends ConsumerWidget {
                                   if (inCart) {
                                     context.go(AppRoutes.cart);
                                   } else {
-                                    ref.read(cartProvider.notifier)
+                                    final result = ref
+                                        .read(cartProvider.notifier)
                                         .addProduct(
                                           product,
                                           selectedVariant!,
                                           quantity: quantity,
                                         );
+                                    if (result ==
+                                        CartAddResult.weightExceeded) {
+                                      showWeightExceededToast(context, ref);
+                                    }
                                   }
                                 }
                               : null,

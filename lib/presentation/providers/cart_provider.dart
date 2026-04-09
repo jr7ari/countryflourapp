@@ -199,28 +199,39 @@ class CartNotifier extends StateNotifier<CartState> {
   void clear() => state = const CartState();
 }
 
-// ─── Helper — show weight-exceeded or success snackbar ───────────────────────
+// ─── Helper — show info toast when cart weight limit is hit ──────────────────
 
-void showCartSnackBar(
-  BuildContext context,
-  CartAddResult result,
-  String itemName,
-  double maxWeightKg,
-) {
-  final msg = result == CartAddResult.weightExceeded
-      ? '⚠️ Cart limit reached (max ${maxWeightKg.toStringAsFixed(1)} kg)'
-      : '$itemName added to cart!';
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(msg),
-      backgroundColor: result == CartAddResult.weightExceeded
-          ? AppColors.error
-          : null,
-      duration: const Duration(seconds: 2),
-      behavior: SnackBarBehavior.floating,
-    ),
+void showWeightExceededToast(BuildContext context, WidgetRef ref) {
+  final maxKg = ref.read(siteConfigProvider).maybeWhen(
+    data: (c) => c.maxCartWeightKg,
+    orElse: () => 50.0,
   );
+  final label = maxKg == maxKg.truncateToDouble()
+      ? maxKg.toInt().toString()
+      : maxKg.toStringAsFixed(1);
+
+  ScaffoldMessenger.of(context)
+    ..clearSnackBars()
+    ..showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.info_outline_rounded,
+                color: Colors.white, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Cart is full — max $label kg per order',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFFF59E0B), // amber
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
 }
 
 // ─── Provider ─────────────────────────────────────────────────────────────────

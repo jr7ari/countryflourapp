@@ -287,8 +287,12 @@ class _ComboDetailBody extends ConsumerWidget {
                           if (inCart) {
                             context.go(AppRoutes.cart);
                           } else {
-                            ref.read(cartProvider.notifier)
+                            final result = ref
+                                .read(cartProvider.notifier)
                                 .addCombo(combo);
+                            if (result == CartAddResult.weightExceeded) {
+                              showWeightExceededToast(context, ref);
+                            }
                           }
                         },
                       ),

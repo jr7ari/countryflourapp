@@ -231,8 +231,12 @@ class _FeaturedProductCard extends ConsumerWidget {
                       activeColor: AppColors.primaryBrown,
                       backgroundColor: const Color(0xFFF5E6CC),
                       onAdd: () {
-                        ref.read(cartProvider.notifier)
+                        final result = ref
+                            .read(cartProvider.notifier)
                             .addProduct(product, defaultVariant);
+                        if (result == CartAddResult.weightExceeded) {
+                          showWeightExceededToast(context, ref);
+                        }
                       },
                     ),
             ),
