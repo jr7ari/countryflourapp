@@ -358,21 +358,6 @@ class _ComboItemRow extends StatelessWidget {
             ),
           ),
 
-          // Price
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                Formatters.currency(item.totalMRP),
-                style: AppTextStyles.priceS.copyWith(color: AppColors.textSecondary),
-              ),
-              if (item.quantity > 1)
-                Text(
-                  '${Formatters.currency(item.baseMRP)} each',
-                  style: AppTextStyles.labelS,
-                ),
-            ],
-          ),
         ],
       ),
     );

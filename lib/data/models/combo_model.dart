@@ -5,6 +5,9 @@ class ComboProductItem {
   final String weight;
   final int quantity;
   final double baseMRP;
+  /// Normal selling price per unit (may differ from MRP if the product has a discount).
+  /// Falls back to baseMRP when the API does not supply a separate selling price.
+  final double price;
 
   const ComboProductItem({
     required this.productId,
@@ -12,15 +15,26 @@ class ComboProductItem {
     required this.weight,
     required this.quantity,
     required this.baseMRP,
+    required this.price,
   });
 
-  factory ComboProductItem.fromJson(Map<String, dynamic> json) => ComboProductItem(
-        productId: json['productId']?.toString() ?? '',
-        productName: json['productName']?.toString() ?? '',
-        weight: json['weight']?.toString() ?? '',
-        quantity: (json['quantity'] as num?)?.toInt() ?? 1,
-        baseMRP: (json['baseMRP'] as num?)?.toDouble() ?? 0.0,
-      );
+  factory ComboProductItem.fromJson(Map<String, dynamic> json) {
+    final mrp = (json['baseMRP'] as num?)?.toDouble() ?? 0.0;
+    // Try several field names the API might use for the selling/normal price
+    final sellingPrice = (json['price'] as num?)?.toDouble() ??
+        (json['offerPrice'] as num?)?.toDouble() ??
+        (json['normalPrice'] as num?)?.toDouble() ??
+        (json['sellingPrice'] as num?)?.toDouble() ??
+        mrp; // fallback: same as MRP
+    return ComboProductItem(
+      productId: json['productId']?.toString() ?? '',
+      productName: json['productName']?.toString() ?? '',
+      weight: json['weight']?.toString() ?? '',
+      quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+      baseMRP: mrp,
+      price: sellingPrice,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'productId': productId,
@@ -28,9 +42,11 @@ class ComboProductItem {
         'weight': weight,
         'quantity': quantity,
         'baseMRP': baseMRP,
+        'price': price,
       };
 
   double get totalMRP => baseMRP * quantity;
+  double get totalPrice => price * quantity;
 }
 
 class Combo {
