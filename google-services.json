@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "837334476210",
+    "project_id": "countryflour-c34ea",
+    "storage_bucket": "countryflour-c34ea.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:837334476210:android:aa018cd27e698a47d870ab",
+        "android_client_info": {
+          "package_name": "in.countryflour.app.country_flour"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBnu4pc3jIgr0A4f3aWFHvxMVXEwxvQ9Fo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
