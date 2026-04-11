@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/constants/app_colors.dart';
 import '../../data/models/cart_item_model.dart';
 import '../../data/models/product_model.dart';
 import '../../data/models/combo_model.dart';
@@ -45,18 +44,22 @@ class CartState {
 
   double get totalSavings => totalMRP - subtotal;
 
-  double get subtotalAfterCoupon => subtotal - couponDiscount;
+  // Prices include shipping and all taxes — no extra charges
+  double get grandTotal => subtotal - couponDiscount;
 
-  // CGST & SGST each at 2.5%
-  static const double taxRate = 2.5;
-  double get cgst => subtotalAfterCoupon * taxRate / 100;
-  double get sgst => subtotalAfterCoupon * taxRate / 100;
-  double get totalTax => cgst + sgst;
+  // Local delivery (pincode 831xx): sum of each item's baseMRP × qty + ₹20 fee
+  static const double localDeliveryFee = 20.0;
 
-  // Delivery is always FREE
-  double get deliveryFee => 0.0;
-
-  double get grandTotal => subtotalAfterCoupon + totalTax;
+  double get localDeliveryTotal {
+    final mrpTotal = items.fold(0.0, (sum, item) {
+      if (item.isCombo) {
+        return sum + (item.combo!.mrp * item.quantity);
+      } else {
+        return sum + (item.product!.baseMRP * item.quantity);
+      }
+    });
+    return mrpTotal + localDeliveryFee;
+  }
 
   bool get hasCoupon => couponCode != null && couponCode!.isNotEmpty;
 

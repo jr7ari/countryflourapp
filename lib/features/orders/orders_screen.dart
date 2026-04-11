@@ -339,19 +339,22 @@ class _OrderCardState extends ConsumerState<_OrderCard> {
     }
   }
 
-  void _showOrderDetail(BuildContext context, Order order) {
-    showModalBottomSheet(
+  Future<void> _showOrderDetail(BuildContext context, Order order) async {
+    final didCancel = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _OrderDetailSheet(order: order),
     );
+    if (didCancel == true && mounted) {
+      ref.invalidate(ordersProvider);
+    }
   }
 
   void _confirmCancel(BuildContext context, Order order) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Cancel Order?'),
         content: Text(
@@ -359,29 +362,26 @@ class _OrderCardState extends ConsumerState<_OrderCard> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogCtx),
             child: const Text('No'),
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context); // close dialog first
+              Navigator.pop(dialogCtx);
               final messenger = ScaffoldMessenger.of(context);
               setState(() => _isCancelling = true);
               final success =
                   await ref.read(cancelOrderProvider.notifier).cancel(order.orderId);
               if (!mounted) return;
               setState(() => _isCancelling = false);
-              messenger.showSnackBar(
-                SnackBar(
-                  content: Text(
-                    success
-                        ? 'Order #${order.orderId} cancelled successfully'
-                        : 'Failed to cancel order. Please try again.',
-                  ),
-                  backgroundColor: success ? AppColors.accentGreen : AppColors.error,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+              if (success) ref.invalidate(ordersProvider);
+              messenger.showSnackBar(SnackBar(
+                content: Text(success
+                    ? 'Order #${order.orderId} cancelled'
+                    : 'Failed to cancel. Please try again.'),
+                backgroundColor: success ? AppColors.accentGreen : AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ));
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Yes, Cancel', style: TextStyle(color: Colors.white)),
@@ -392,15 +392,24 @@ class _OrderCardState extends ConsumerState<_OrderCard> {
   }
 }
 
-class _OrderDetailSheet extends StatelessWidget {
+class _OrderDetailSheet extends ConsumerStatefulWidget {
   const _OrderDetailSheet({required this.order});
   final Order order;
+
+  @override
+  ConsumerState<_OrderDetailSheet> createState() => _OrderDetailSheetState();
+}
+
+class _OrderDetailSheetState extends ConsumerState<_OrderDetailSheet> {
+  bool _isCancelling = false;
+
+  Order get order => widget.order;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       decoration: const BoxDecoration(
         color: AppColors.backgroundCream,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -424,7 +433,7 @@ class _OrderDetailSheet extends StatelessWidget {
           Text(Formatters.dateTime(order.createdAt), style: AppTextStyles.bodyS),
           const SizedBox(height: 20),
 
-          // Timeline
+          // Scrollable content
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -513,9 +522,90 @@ class _OrderDetailSheet extends StatelessWidget {
                       ],
                     ),
                   ),
+
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
+          ),
+
+          // Cancel button — pinned at bottom, only when cancellable
+          if (order.canCancel)
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: _isCancelling ? null : _confirmCancel,
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                        color: _isCancelling
+                            ? AppColors.border
+                            : AppColors.error.withAlpha(160),
+                      ),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: _isCancelling
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: AppColors.error),
+                          )
+                        : const Icon(Icons.cancel_outlined,
+                            color: AppColors.error, size: 18),
+                    label: Text(
+                      _isCancelling ? 'Cancelling…' : 'Cancel Order',
+                      style: AppTextStyles.buttonM.copyWith(color: AppColors.error),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmCancel() {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Cancel Order?'),
+        content: Text(
+          'Are you sure you want to cancel order #${order.orderId}? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('No'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              setState(() => _isCancelling = true);
+              final success = await ref
+                  .read(cancelOrderProvider.notifier)
+                  .cancel(order.orderId);
+              if (!mounted) return;
+              if (success) {
+                // Pop sheet with true — parent will refresh the orders list
+                Navigator.of(context).pop(true);
+                return;
+              }
+              setState(() => _isCancelling = false);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('Failed to cancel. Please try again.'),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ));
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Yes, Cancel', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

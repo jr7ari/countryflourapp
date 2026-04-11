@@ -93,9 +93,7 @@ class _ComboHighlightCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // cartProvider watched inside AddOrCounterButton — no top-level watch needed
 
-    return GestureDetector(
-      onTap: () => context.push(AppRoutes.comboDetailPath(combo.id)),
-      child: Container(
+    return Container(
         width: 200,
         margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
@@ -115,9 +113,16 @@ class _ComboHighlightCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            // No mainAxisSize.min — Column expands to fill card height
             children: [
-              // ── Image (clean, badges only) ──────────────────────────────
+              // ── Tappable: image + info ──────────────────────────────────
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => context.push(AppRoutes.comboDetailPath(combo.id)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+
+              // ── Image ──────────────────────────────────────────────────
               Stack(
                 children: [
                   SizedBox(
@@ -221,8 +226,12 @@ class _ComboHighlightCard extends ConsumerWidget {
                   ),
                 ),
               ),
+                    ],
+                  ),
+                ),
+              ),
 
-              // ── Add / Counter button — pinned at bottom ──────────────────
+              // ── Button — outside tap zone ───────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
                 child: AddOrCounterButton(
@@ -243,7 +252,6 @@ class _ComboHighlightCard extends ConsumerWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }

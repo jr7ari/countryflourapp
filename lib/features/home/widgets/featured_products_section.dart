@@ -78,9 +78,7 @@ class _FeaturedProductCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final defaultVariant = product.defaultVariant;
 
-    return GestureDetector(
-      onTap: () => context.push(AppRoutes.productDetailPath(product.slug)),
-      child: Container(
+    return Container(
         width: 160,
         margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
@@ -98,6 +96,14 @@ class _FeaturedProductCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Tappable: image + info ────────────────────────────
+            Expanded(
+              child: GestureDetector(
+                onTap: () => context.push(AppRoutes.productDetailPath(product.slug)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+
             // Image
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -109,14 +115,11 @@ class _FeaturedProductCard extends ConsumerWidget {
                     decoration: const BoxDecoration(
                       gradient: AppColors.cardGradient,
                     ),
-                    child: Hero(
-                      tag: 'product_featured_${product.id}',
-                      child: Image.network(
-                        product.image,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Center(
-                          child: Icon(Icons.grain_rounded, size: 40, color: AppColors.primaryGold),
-                        ),
+                    child: Image.network(
+                      product.image,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Center(
+                        child: Icon(Icons.grain_rounded, size: 40, color: AppColors.primaryGold),
                       ),
                     ),
                   ),
@@ -218,8 +221,12 @@ class _FeaturedProductCard extends ConsumerWidget {
                 ),
               ),
             ),
+                  ],
+                ),
+              ),
+            ),
 
-            // ── Add / Counter button — pinned at bottom ──────────────────
+            // ── Button — outside tap zone ─────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 6, 10, 10),
               child: defaultVariant == null
@@ -242,7 +249,6 @@ class _FeaturedProductCard extends ConsumerWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }

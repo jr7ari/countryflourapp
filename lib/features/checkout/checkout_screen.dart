@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
@@ -13,6 +14,7 @@ import '../../data/models/address_model.dart';
 import '../../data/models/order_model.dart';
 import '../../presentation/providers/cart_provider.dart';
 import '../../presentation/providers/orders_provider.dart';
+import '../../presentation/navigation/app_router.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -65,10 +67,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen>
 
     setState(() => _isPlacingOrder = true);
 
-    const shippingFee = 49.0;
-    final freeShipping = cart.subtotal >= 499;
-    final shipping = freeShipping ? 0.0 : shippingFee;
-    final total = cart.subtotal + shipping;
+    final isLocal = ref.read(isLocalDeliveryProvider);
+    final shipping = isLocal ? CartState.localDeliveryFee : 0.0;
+    final total = ref.read(checkoutTotalProvider);
 
     // Build items list
     final items = cart.items
@@ -158,12 +159,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen>
 
       if (!mounted) return;
       ref.read(cartProvider.notifier).clear();
+      ref.invalidate(ordersProvider); // refresh orders list before navigating
       setState(() => _isPlacingOrder = false);
 
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (_) => _OrderSuccessDialog(orderId: order.orderId),
+        builder: (_) => _OrderSuccessDialog(
+          orderId: order.orderId,
+          onViewOrders: () {
+            Navigator.of(context).pop(); // close dialog
+            context.go(AppRoutes.orders);
+          },
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -205,9 +213,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen>
   Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
     final selectedAddress = ref.watch(selectedAddressProvider);
-    const shippingFee = 49.0;
-    final freeShipping = cart.subtotal >= 499;
-    final total = cart.subtotal + (freeShipping ? 0 : shippingFee);
+    final total = ref.watch(checkoutTotalProvider);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundCream,
@@ -228,7 +234,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen>
                 _AddressStep(
                   onContinue: _nextStep,
                 ),
-                _ReviewStep(cart: cart, shippingFee: freeShipping ? 0 : shippingFee),
+                _ReviewStep(cart: cart, total: ref.watch(checkoutTotalProvider)),
                 _PaymentStep(total: total),
               ],
             ),
@@ -598,14 +604,14 @@ class _AddAddressSheet extends StatelessWidget {
 // ─── Step 2: Review ──────────────────────────────────────────────────────────
 
 class _ReviewStep extends ConsumerWidget {
-  const _ReviewStep({required this.cart, required this.shippingFee});
+  const _ReviewStep({required this.cart, required this.total});
   final CartState cart;
-  final double shippingFee;
+  final double total;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedAddress = ref.watch(selectedAddressProvider);
-    final total = cart.subtotal + shippingFee;
+    final isLocal = ref.watch(isLocalDeliveryProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -685,6 +691,30 @@ class _ReviewStep extends ConsumerWidget {
 
           const Gap(16),
 
+          // Local delivery badge
+          if (isLocal)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.accentGreen.withAlpha(80)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.electric_bike_rounded,
+                      size: 16, color: AppColors.accentGreen),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Local delivery (Jamshedpur)',
+                    style: AppTextStyles.labelL
+                        .copyWith(color: AppColors.accentGreen),
+                  ),
+                ],
+              ),
+            ),
+
           // Price breakdown
           Container(
             padding: const EdgeInsets.all(14),
@@ -693,21 +723,42 @@ class _ReviewStep extends ConsumerWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.border),
             ),
-            child: Column(
-              children: [
-                _Row('Subtotal', Formatters.currency(cart.subtotal)),
-                if (cart.totalSavings > 0)
-                  _Row('You Saved', '- ${Formatters.currency(cart.totalSavings)}',
-                      color: AppColors.accentGreen),
-                _Row(
-                  'Delivery',
-                  shippingFee == 0 ? 'FREE' : Formatters.currency(shippingFee),
-                  color: shippingFee == 0 ? AppColors.accentGreen : null,
-                ),
-                const Divider(height: 16),
-                _Row('Total', Formatters.currency(total), isBold: true),
-              ],
-            ),
+            child: isLocal
+                ? Column(
+                    children: [
+                      ...cart.items.map((item) {
+                        final mrp = item.isCombo
+                            ? item.combo!.mrp
+                            : item.product!.baseMRP;
+                        return _Row(
+                          '${item.displayName} ×${item.quantity}',
+                          Formatters.currency(mrp * item.quantity),
+                        );
+                      }),
+                      _Row('Local Delivery',
+                          Formatters.currency(CartState.localDeliveryFee)),
+                      const Divider(height: 16),
+                      _Row('Total', Formatters.currency(total), isBold: true),
+                    ],
+                  )
+                : Column(
+                    children: [
+                      _Row('Subtotal', Formatters.currency(cart.subtotal)),
+                      if (cart.totalSavings > 0)
+                        _Row(
+                            'You Saved',
+                            '- ${Formatters.currency(cart.totalSavings)}',
+                            color: AppColors.accentGreen),
+                      if (cart.hasCoupon)
+                        _Row(
+                          'Coupon (${cart.couponCode})',
+                          '- ${Formatters.currency(cart.couponDiscount)}',
+                          color: AppColors.accentGreen,
+                        ),
+                      const Divider(height: 16),
+                      _Row('Total', Formatters.currency(total), isBold: true),
+                    ],
+                  ),
           ),
         ],
       ),
@@ -881,8 +932,12 @@ class _PaymentOption extends StatelessWidget {
 // ─── Success Dialog ───────────────────────────────────────────────────────────
 
 class _OrderSuccessDialog extends StatelessWidget {
-  const _OrderSuccessDialog({required this.orderId});
+  const _OrderSuccessDialog({
+    required this.orderId,
+    required this.onViewOrders,
+  });
   final String orderId;
+  final VoidCallback onViewOrders;
 
   @override
   Widget build(BuildContext context) {
@@ -922,9 +977,7 @@ class _OrderSuccessDialog extends StatelessWidget {
             PrimaryButton(
               label: 'View Orders',
               icon: Icons.receipt_long_rounded,
-              onPressed: () {
-                Navigator.of(context).popUntil((r) => r.isFirst);
-              },
+              onPressed: onViewOrders,
             ),
           ],
         ),

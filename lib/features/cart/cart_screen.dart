@@ -515,29 +515,6 @@ class _OrderSummaryState extends ConsumerState<_OrderSummary> {
                 ),
               ),
 
-            // ── Free Delivery Banner ──────────────────────────────────
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.accentGreenLight,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.local_shipping_rounded,
-                      size: 16, color: AppColors.accentGreen),
-                  const SizedBox(width: 6),
-                  Text(
-                    'FREE Delivery on all orders!',
-                    style: AppTextStyles.labelL
-                        .copyWith(color: AppColors.accentGreen),
-                  ),
-                ],
-              ),
-            ),
-
             // ── Summary rows ──────────────────────────────────────────
             _SummaryRow('Subtotal', Formatters.currency(cart.subtotal)),
             if (cart.totalSavings > 0)
@@ -552,19 +529,6 @@ class _OrderSummaryState extends ConsumerState<_OrderSummary> {
                 '- ${Formatters.currency(cart.couponDiscount)}',
                 valueColor: AppColors.accentGreen,
               ),
-            _SummaryRow(
-              'CGST (${CartState.taxRate}%)',
-              Formatters.currency(cart.cgst),
-            ),
-            _SummaryRow(
-              'SGST (${CartState.taxRate}%)',
-              Formatters.currency(cart.sgst),
-            ),
-            _SummaryRow(
-              'Delivery',
-              'FREE',
-              valueColor: AppColors.accentGreen,
-            ),
             const Divider(height: 16),
             _SummaryRow(
               'Total',

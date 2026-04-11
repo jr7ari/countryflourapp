@@ -7,6 +7,7 @@ import '../../data/models/order_model.dart';
 import '../../data/models/address_model.dart';
 import '../../data/repositories/order_repository.dart';
 import '../../data/repositories/auth_repository.dart';
+import 'cart_provider.dart';
 
 // ─── SharedPreferences keys ───────────────────────────────────────────────────
 const _kToken = 'auth_token';
@@ -83,8 +84,6 @@ class CancelOrderNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       await _repo.cancelOrder(orderId);
       state = const AsyncValue.data(null);
-      // Refresh the orders list so the status updates immediately
-      _ref.invalidate(ordersProvider);
       return true;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -96,6 +95,22 @@ class CancelOrderNotifier extends StateNotifier<AsyncValue<void>> {
 final cancelOrderProvider =
     StateNotifierProvider<CancelOrderNotifier, AsyncValue<void>>((ref) {
   return CancelOrderNotifier(ref.watch(orderRepositoryProvider), ref);
+});
+
+// ─── Local delivery detection (pincode starts with "831") ─────────────────────
+
+/// True when the selected address is within the local delivery zone.
+final isLocalDeliveryProvider = Provider<bool>((ref) {
+  final pincode = ref.watch(selectedAddressProvider)?.pincode ?? '';
+  return pincode.startsWith('831');
+});
+
+/// The amount the customer actually pays — switches to local pricing when
+/// the selected address pincode starts with 831.
+final checkoutTotalProvider = Provider<double>((ref) {
+  final cart = ref.watch(cartProvider);
+  final isLocal = ref.watch(isLocalDeliveryProvider);
+  return isLocal ? cart.localDeliveryTotal : cart.grandTotal;
 });
 
 // ─── Shipping Rate ────────────────────────────────────────────────────────────

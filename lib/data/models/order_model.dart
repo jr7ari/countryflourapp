@@ -100,7 +100,7 @@ class Order {
   bool get canCancel =>
       !isDelivered &&
       !isCancelled &&
-      ['pending', 'confirmed'].contains(orderStatus.toLowerCase());
+      ['pending', 'confirmed', 'processing'].contains(orderStatus.toLowerCase());
 
   int get statusStep {
     switch (orderStatus.toLowerCase()) {

@@ -18,24 +18,30 @@ class ProductCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final defaultVariant = product.defaultVariant;
 
-    return GestureDetector(
-      onTap: () => context.push(AppRoutes.productDetailPath(product.slug)),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surfaceWhite,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border, width: 0.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(8),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border, width: 0.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Tappable area: image + info ───────────────────────
+          Expanded(
+            child: GestureDetector(
+              onTap: () => context.push(AppRoutes.productDetailPath(product.slug)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
             // ── Image ─────────────────────────────────────────────
             Stack(
               children: [
@@ -46,15 +52,12 @@ class ProductCard extends ConsumerWidget {
                     height: 130,
                     width: double.infinity,
                     color: const Color(0xFFFFF8ED),
-                    child: Hero(
-                      tag: 'product_${product.id}',
-                      child: Image.network(
-                        product.image,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Center(
-                          child: Icon(Icons.grain_rounded,
-                              size: 48, color: AppColors.primaryGold),
-                        ),
+                    child: Image.network(
+                      product.image,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Center(
+                        child: Icon(Icons.grain_rounded,
+                            size: 48, color: AppColors.primaryGold),
                       ),
                     ),
                   ),
@@ -91,8 +94,7 @@ class ProductCard extends ConsumerWidget {
             ),
 
             // ── Info ─────────────────────────────────────────────
-            Expanded(
-              child: Padding(
+            Expanded(child: Padding(
                 padding: const EdgeInsets.fromLTRB(10, 6, 10, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,30 +204,33 @@ class ProductCard extends ConsumerWidget {
                 ),
               ),
             ),
-
-            // ── Button ───────────────────────────────────────────
-            if (defaultVariant != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-                child: AddOrCounterButton(
-                  cartId: 'product_${product.id}_${defaultVariant.id}',
-                  disabled: !product.inStock,
-                  label: 'Add to Cart',
-                  height: 32,
-                  activeColor: Colors.white,
-                  backgroundColor: AppColors.primaryBrown,
-                  onAdd: () {
-                    final result = ref
-                        .read(cartProvider.notifier)
-                        .addProduct(product, defaultVariant);
-                    if (result == CartAddResult.weightExceeded) {
-                      showWeightExceededToast(context, ref);
-                    }
-                  },
-                ),
+                ],
               ),
-          ],
-        ),
+            ),
+          ),
+
+          // ── Button — outside tap zone ─────────────────────────
+          if (defaultVariant != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: AddOrCounterButton(
+                cartId: 'product_${product.id}_${defaultVariant.id}',
+                disabled: !product.inStock,
+                label: 'Add to Cart',
+                height: 32,
+                activeColor: Colors.white,
+                backgroundColor: AppColors.primaryBrown,
+                onAdd: () {
+                  final result = ref
+                      .read(cartProvider.notifier)
+                      .addProduct(product, defaultVariant);
+                  if (result == CartAddResult.weightExceeded) {
+                    showWeightExceededToast(context, ref);
+                  }
+                },
+              ),
+            ),
+        ],
       ),
     );
   }

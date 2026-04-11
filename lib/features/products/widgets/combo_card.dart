@@ -27,27 +27,32 @@ class _ComboCardState extends ConsumerState<ComboCard> {
   Widget build(BuildContext context) {
     // cartProvider state managed inside AddOrCounterButton
 
-    return GestureDetector(
-      onTap: () => context.push(AppRoutes.comboDetailPath(widget.combo.id)),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surfaceWhite,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.comboPrimary.withAlpha(40), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.comboPrimary.withAlpha(18),
-              blurRadius: 16,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.comboPrimary.withAlpha(40), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.comboPrimary.withAlpha(18),
+            blurRadius: 16,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Tappable area: image + text ───────────────────────
+            GestureDetector(
+              onTap: () => context.push(AppRoutes.comboDetailPath(widget.combo.id)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
               // ── Image (badges only, no text overlay) ────────────────────
               Stack(
                 children: [
@@ -174,8 +179,12 @@ class _ComboCardState extends ConsumerState<ComboCard> {
                 ),
               ),
 
-              // ── Action bar ───────────────────────────────────────────────
-              Container(
+                ],
+              ),
+            ),
+
+            // ── Action bar — outside tap zone ─────────────────────────────
+            Container(
                 padding:
                     const EdgeInsets.fromLTRB(14, 0, 14, 26),
                 child: Column(
@@ -248,7 +257,6 @@ class _ComboCardState extends ConsumerState<ComboCard> {
             ],
           ),
         ),
-      ),
     );
   }
 }

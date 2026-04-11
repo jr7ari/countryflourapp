@@ -8,7 +8,6 @@ import '../../core/widgets/shimmer_loading.dart';
 import '../../presentation/providers/products_provider.dart';
 import '../../presentation/providers/orders_provider.dart';
 import '../../presentation/providers/location_provider.dart';
-import '../../presentation/providers/cart_provider.dart';
 import '../../presentation/navigation/app_router.dart';
 import 'widgets/banner_slider.dart';
 import 'widgets/featured_products_section.dart';
@@ -385,20 +384,15 @@ class _ProductMiniCard extends ConsumerWidget {
                 ),
                 child: Stack(
                   children: [
-                    Center(
-                      child: Hero(
-                        tag: 'product_${product.id}',
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                          child: Image.network(
-                            product.image,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                            errorBuilder: (_, __, ___) => const Center(
-                              child: Icon(Icons.grain_rounded, size: 48, color: AppColors.primaryGold),
-                            ),
-                          ),
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      child: Image.network(
+                        product.image,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorBuilder: (_, __, ___) => const Center(
+                          child: Icon(Icons.grain_rounded, size: 48, color: AppColors.primaryGold),
                         ),
                       ),
                     ),
