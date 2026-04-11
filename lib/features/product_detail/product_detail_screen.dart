@@ -271,7 +271,7 @@ class _ProductDetailBody extends ConsumerWidget {
                               child: PrimaryButton(
                                 label: 'Go to Cart',
                                 icon: Icons.shopping_cart_rounded,
-                                onPressed: () => context.push(AppRoutes.cart),
+                                onPressed: () => context.go(AppRoutes.cart),
                                 height: 48,
                               ),
                             ),
