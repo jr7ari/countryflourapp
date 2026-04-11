@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
-import 'package:go_router/go_router.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_button.dart';
 import '../../data/models/address_model.dart';
+import '../../data/models/order_model.dart';
 import '../../presentation/providers/cart_provider.dart';
 import '../../presentation/providers/orders_provider.dart';
 
@@ -22,18 +24,28 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _stepController;
+  late final Razorpay _razorpay;
   int _currentStep = 0;
   bool _isPlacingOrder = false;
+
+  // Stored between create-order and verify steps
+  RazorpayOrderResponse? _pendingRazorpayOrder;
+  CreateOrderRequest? _pendingOrderRequest;
 
   @override
   void initState() {
     super.initState();
     _stepController = TabController(length: 3, vsync: this);
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
   }
 
   @override
   void dispose() {
     _stepController.dispose();
+    _razorpay.clear();
     super.dispose();
   }
 
@@ -44,21 +56,148 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen>
     }
   }
 
+  // ─── Payment helpers ────────────────────────────────────────────────────────
 
   Future<void> _placeOrder() async {
+    final cart = ref.read(cartProvider);
+    final selectedAddress = ref.read(selectedAddressProvider);
+    if (selectedAddress == null) return;
+
     setState(() => _isPlacingOrder = true);
-    await Future.delayed(const Duration(seconds: 2));
+
+    const shippingFee = 49.0;
+    final freeShipping = cart.subtotal >= 499;
+    final shipping = freeShipping ? 0.0 : shippingFee;
+    final total = cart.subtotal + shipping;
+
+    // Build items list
+    final items = cart.items
+        .map((item) => CartItemRequest(
+              productId:
+                  item.isCombo ? item.combo!.id : item.product!.id,
+              productName: item.displayName,
+              variantId: item.isCombo ? '' : item.variant!.id,
+              weight: item.displayWeight,
+              quantity: item.quantity,
+              price: item.unitPrice,
+              isCombo: item.isCombo,
+            ))
+        .toList();
+
+    final addressMap = {
+      'name': selectedAddress.name,
+      'phone': selectedAddress.phone,
+      'addressLine': selectedAddress.addressLine,
+      'city': selectedAddress.city,
+      'state': selectedAddress.state,
+      'pincode': selectedAddress.pincode,
+      if (selectedAddress.landmark != null &&
+          selectedAddress.landmark!.isNotEmpty)
+        'landmark': selectedAddress.landmark,
+    };
+
+    _pendingOrderRequest = CreateOrderRequest(
+      amount: total,
+      subtotal: cart.subtotal,
+      shippingCharges: shipping,
+      items: items,
+      shippingAddress: addressMap,
+    );
+
+    try {
+      final repo = ref.read(orderRepositoryProvider);
+      _pendingRazorpayOrder =
+          await repo.createRazorpayOrder(_pendingOrderRequest!);
+
+      final auth = ref.read(authProvider);
+      _razorpay.open({
+        'key': AppConstants.razorpayKeyId,
+        'amount': (total * 100).toInt(), // paise
+        'order_id': _pendingRazorpayOrder!.razorpayOrderId,
+        'name': AppConstants.appName,
+        'description': 'Order #${_pendingRazorpayOrder!.orderId}',
+        'prefill': {
+          'contact': selectedAddress.phone,
+          'email': auth.email ?? '',
+          'name': selectedAddress.name,
+        },
+        'theme': {'color': '#6B3E26'},
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isPlacingOrder = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not initiate payment: $e')),
+      );
+    }
+  }
+
+  Future<void> _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    if (!mounted) return;
+    if (_pendingRazorpayOrder == null || _pendingOrderRequest == null) return;
+
+    try {
+      final repo = ref.read(orderRepositoryProvider);
+      final cart = ref.read(cartProvider);
+
+      final verifyRequest = PaymentVerifyRequest(
+        razorpayOrderId: response.orderId ?? _pendingRazorpayOrder!.razorpayOrderId,
+        razorpayPaymentId: response.paymentId ?? '',
+        razorpaySignature: response.signature ?? '',
+        orderId: _pendingRazorpayOrder!.orderId,
+        amount: _pendingOrderRequest!.amount,
+        subtotal: _pendingOrderRequest!.subtotal,
+        shippingCharges: _pendingOrderRequest!.shippingCharges,
+        items: _pendingOrderRequest!.items,
+        shippingAddress: _pendingOrderRequest!.shippingAddress,
+        couponCode: cart.couponCode,
+        discountAmount: cart.couponDiscount,
+      );
+
+      final order = await repo.verifyPayment(verifyRequest);
+
+      if (!mounted) return;
+      ref.read(cartProvider.notifier).clear();
+      setState(() => _isPlacingOrder = false);
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => _OrderSuccessDialog(orderId: order.orderId),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isPlacingOrder = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Payment received but verification failed: $e'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
     if (!mounted) return;
     setState(() => _isPlacingOrder = false);
-
-    // Simulate success
-    ref.read(cartProvider.notifier).clear();
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _OrderSuccessDialog(
-        orderId: 'CF2024${DateTime.now().millisecond}',
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          response.message?.isNotEmpty == true
+              ? response.message!
+              : 'Payment failed. Please try again.',
+        ),
+        backgroundColor: Colors.red,
       ),
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    if (!mounted) return;
+    setState(() => _isPlacingOrder = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('External wallet: ${response.walletName}')),
     );
   }
 

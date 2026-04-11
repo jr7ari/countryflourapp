@@ -69,6 +69,35 @@ final createAddressProvider =
   return CreateAddressNotifier(repo);
 });
 
+// ─── Cancel Order ─────────────────────────────────────────────────────────────
+
+class CancelOrderNotifier extends StateNotifier<AsyncValue<void>> {
+  final OrderRepository _repo;
+  final Ref _ref;
+
+  CancelOrderNotifier(this._repo, this._ref)
+      : super(const AsyncValue.data(null));
+
+  Future<bool> cancel(String orderId) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repo.cancelOrder(orderId);
+      state = const AsyncValue.data(null);
+      // Refresh the orders list so the status updates immediately
+      _ref.invalidate(ordersProvider);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+}
+
+final cancelOrderProvider =
+    StateNotifierProvider<CancelOrderNotifier, AsyncValue<void>>((ref) {
+  return CancelOrderNotifier(ref.watch(orderRepositoryProvider), ref);
+});
+
 // ─── Shipping Rate ────────────────────────────────────────────────────────────
 
 final shippingRateProvider = StateProvider<double>((ref) => 49.0);

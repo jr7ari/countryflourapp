@@ -16,6 +16,11 @@ class AppConstants {
   static const String verifyPaymentEndpoint = '/payment/verify';
   static const String ordersEndpoint = '/orders';
 
+  // Razorpay — replace with your live key before release
+  // Test key:  rzp_test_XXXXXXXXXXXXXXXX
+  // Live key:  rzp_live_XXXXXXXXXXXXXXXX
+  static const String razorpayKeyId = 'rzp_live_SXikaMpP12VYsO';
+
   // Spacing
   static const double spacingXS = 4.0;
   static const double spacingS = 8.0;

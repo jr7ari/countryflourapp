@@ -10,6 +10,8 @@ abstract class IOrderRepository {
   Future<List<Address>> getAddresses();
   Future<Address> createAddress(AddressRequest body);
   Future<double> getShippingRate(Map<String, dynamic> body);
+  Future<RazorpayOrderResponse> createRazorpayOrder(CreateOrderRequest request);
+  Future<Order> verifyPayment(PaymentVerifyRequest request);
 }
 
 class OrderRepository implements IOrderRepository {
@@ -60,7 +62,16 @@ class OrderRepository implements IOrderRepository {
 
   @override
   Future<bool> cancelOrder(String orderId) async {
-    throw UnimplementedError('cancelOrder not wired to API yet');
+    final res = await http.post(
+      Uri.parse('$_base/user/orders/$orderId'),
+      headers: _headers,
+      body: jsonEncode({'action': 'cancel'}),
+    );
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw Exception(
+          'Failed to cancel order (${res.statusCode}): ${res.body}');
+    }
+    return true;
   }
 
   // ─── Addresses ─────────────────────────────────────────────────────────────
@@ -104,6 +115,39 @@ class OrderRepository implements IOrderRepository {
   @override
   Future<double> getShippingRate(Map<String, dynamic> body) async {
     return 49.0; // TODO: wire to shipping API
+  }
+
+  // ─── Payment ────────────────────────────────────────────────────────────────
+
+  @override
+  Future<RazorpayOrderResponse> createRazorpayOrder(
+      CreateOrderRequest request) async {
+    final res = await http.post(
+      Uri.parse('$_base/payment/create-order'),
+      headers: _headers,
+      body: jsonEncode(request.toJson()),
+    );
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw Exception(
+          'Failed to create Razorpay order (${res.statusCode}): ${res.body}');
+    }
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return RazorpayOrderResponse.fromJson(body);
+  }
+
+  @override
+  Future<Order> verifyPayment(PaymentVerifyRequest request) async {
+    final res = await http.post(
+      Uri.parse('$_base/payment/verify'),
+      headers: _headers,
+      body: jsonEncode(request.toJson()),
+    );
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw Exception(
+          'Payment verification failed (${res.statusCode}): ${res.body}');
+    }
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return Order.fromJson(body['order'] ?? body);
   }
 }
 

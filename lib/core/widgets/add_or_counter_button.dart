@@ -48,6 +48,16 @@ class AddOrCounterButton extends ConsumerWidget {
       cartProvider.select((c) => c.quantityOf(cartId)),
     );
 
+    // Wrap everything in an absorbing GestureDetector so taps on the button
+    // (including the qty number) never bubble up to a parent card navigator.
+    return GestureDetector(
+      onTap: () {},
+      behavior: HitTestBehavior.opaque,
+      child: _buildContent(context, ref, qty),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, WidgetRef ref, int qty) {
     // ── Out of Stock ──────────────────────────────────────────────────────────
     if (disabled) {
       return _shell(

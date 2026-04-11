@@ -108,13 +108,23 @@ class OrdersScreen extends ConsumerWidget {
   }
 }
 
-class _OrderCard extends ConsumerWidget {
+class _OrderCard extends ConsumerStatefulWidget {
   const _OrderCard({required this.order, required this.index});
   final Order order;
   final int index;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_OrderCard> createState() => _OrderCardState();
+}
+
+class _OrderCardState extends ConsumerState<_OrderCard> {
+  bool _isCancelling = false;
+
+  Order get order => widget.order;
+  int get index => widget.index;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
@@ -243,17 +253,34 @@ class _OrderCard extends ConsumerWidget {
                 if (order.canCancel) ...[
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: () => _confirmCancel(context, ref, order),
-                    child: Container(
+                    onTap: _isCancelling
+                        ? null
+                        : () => _confirmCancel(context, order),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.error.withAlpha(80)),
+                        border: Border.all(
+                          color: _isCancelling
+                              ? AppColors.border
+                              : AppColors.error.withAlpha(80),
+                        ),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
-                        'Cancel',
-                        style: AppTextStyles.labelL.copyWith(color: AppColors.error),
-                      ),
+                      child: _isCancelling
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.error,
+                              ),
+                            )
+                          : Text(
+                              'Cancel',
+                              style:
+                                  AppTextStyles.labelL.copyWith(color: AppColors.error),
+                            ),
                     ),
                   ),
                 ],
@@ -321,29 +348,43 @@ class _OrderCard extends ConsumerWidget {
     );
   }
 
-  void _confirmCancel(BuildContext context, WidgetRef ref, Order order) {
+  void _confirmCancel(BuildContext context, Order order) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Cancel Order?'),
-        content: Text('Are you sure you want to cancel order #${order.orderId}?'),
+        content: Text(
+          'Are you sure you want to cancel order #${order.orderId}? This cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('No'),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Order cancellation requested'),
+            onPressed: () async {
+              Navigator.pop(context); // close dialog first
+              final messenger = ScaffoldMessenger.of(context);
+              setState(() => _isCancelling = true);
+              final success =
+                  await ref.read(cancelOrderProvider.notifier).cancel(order.orderId);
+              if (!mounted) return;
+              setState(() => _isCancelling = false);
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    success
+                        ? 'Order #${order.orderId} cancelled successfully'
+                        : 'Failed to cancel order. Please try again.',
+                  ),
+                  backgroundColor: success ? AppColors.accentGreen : AppColors.error,
                   behavior: SnackBarBehavior.floating,
                 ),
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Yes, Cancel'),
+            child: const Text('Yes, Cancel', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

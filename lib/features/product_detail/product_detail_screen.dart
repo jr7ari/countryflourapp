@@ -11,6 +11,7 @@ import '../../core/constants/app_text_styles.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/badge_widget.dart';
 import '../../core/widgets/app_button.dart';
+import '../../core/widgets/add_or_counter_button.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../data/models/product_model.dart';
 import '../../presentation/providers/products_provider.dart';
@@ -246,48 +247,72 @@ class _ProductDetailBody extends ConsumerWidget {
                 // Quantity + Add to Cart
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                  child: Row(
-                    children: [
-                      QuantitySelector(
-                        quantity: quantity,
-                        onIncrement: () {
-                          if (quantity < 10) onQuantityChanged(quantity + 1);
-                        },
-                        onDecrement: () {
-                          if (quantity > 1) onQuantityChanged(quantity - 1);
-                        },
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: PrimaryButton(
-                          label: inCart ? 'Go to Cart' : 'Add to Cart',
-                          icon: inCart
-                              ? Icons.shopping_cart_rounded
-                              : Icons.add_shopping_cart_rounded,
-                          onPressed: product.inStock && selectedVariant != null
-                              ? () {
-                                  if (inCart) {
-                                    context.go(AppRoutes.cart);
-                                  } else {
-                                    final result = ref
-                                        .read(cartProvider.notifier)
-                                        .addProduct(
-                                          product,
-                                          selectedVariant!,
-                                          quantity: quantity,
-                                        );
-                                    if (result ==
-                                        CartAddResult.weightExceeded) {
-                                      showWeightExceededToast(context, ref);
-                                    }
+                  child: inCart && selectedVariant != null
+                      // ── Already in cart: live counter synced with cartProvider ──
+                      ? Row(
+                          children: [
+                            SizedBox(
+                              width: 130,
+                              child: AddOrCounterButton(
+                                cartId: 'product_${product.id}_${selectedVariant!.id}',
+                                height: 48,
+                                onAdd: () {
+                                  final result = ref
+                                      .read(cartProvider.notifier)
+                                      .addProduct(product, selectedVariant!);
+                                  if (result == CartAddResult.weightExceeded) {
+                                    showWeightExceededToast(context, ref);
                                   }
-                                }
-                              : null,
-                          height: 48,
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: PrimaryButton(
+                                label: 'Go to Cart',
+                                icon: Icons.shopping_cart_rounded,
+                                onPressed: () => context.push(AppRoutes.cart),
+                                height: 48,
+                              ),
+                            ),
+                          ],
+                        )
+                      // ── Not in cart: quantity picker + Add to Cart ──
+                      : Row(
+                          children: [
+                            QuantitySelector(
+                              quantity: quantity,
+                              onIncrement: () {
+                                if (quantity < 10) onQuantityChanged(quantity + 1);
+                              },
+                              onDecrement: () {
+                                if (quantity > 1) onQuantityChanged(quantity - 1);
+                              },
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: PrimaryButton(
+                                label: 'Add to Cart',
+                                icon: Icons.add_shopping_cart_rounded,
+                                onPressed: product.inStock && selectedVariant != null
+                                    ? () {
+                                        final result = ref
+                                            .read(cartProvider.notifier)
+                                            .addProduct(
+                                              product,
+                                              selectedVariant!,
+                                              quantity: quantity,
+                                            );
+                                        if (result == CartAddResult.weightExceeded) {
+                                          showWeightExceededToast(context, ref);
+                                        }
+                                      }
+                                    : null,
+                                height: 48,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
                 ).animate().fadeIn(delay: 250.ms),
 
                 const SizedBox(height: 16),

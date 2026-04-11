@@ -285,7 +285,7 @@ class _ComboDetailBody extends ConsumerWidget {
                         gradient: AppColors.comboGradient,
                         onPressed: () {
                           if (inCart) {
-                            context.go(AppRoutes.cart);
+                            context.push(AppRoutes.cart);
                           } else {
                             final result = ref
                                 .read(cartProvider.notifier)

@@ -147,6 +147,69 @@ class CreateOrderRequest {
       };
 }
 
+/// Response from POST /api/mobileapi/payment/create-order
+class RazorpayOrderResponse {
+  final String razorpayOrderId;
+  final String orderId; // internal CF order ID
+  final double amount;
+
+  const RazorpayOrderResponse({
+    required this.razorpayOrderId,
+    required this.orderId,
+    required this.amount,
+  });
+
+  factory RazorpayOrderResponse.fromJson(Map<String, dynamic> json) =>
+      RazorpayOrderResponse(
+        razorpayOrderId: json['razorpayOrderId']?.toString() ?? '',
+        orderId: json['orderId']?.toString() ?? '',
+        amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      );
+}
+
+/// Request body for POST /api/mobileapi/payment/verify
+class PaymentVerifyRequest {
+  final String razorpayOrderId;
+  final String razorpayPaymentId;
+  final String razorpaySignature;
+  final String orderId;
+  final double amount;
+  final double subtotal;
+  final double shippingCharges;
+  final List<CartItemRequest> items;
+  final Map<String, dynamic> shippingAddress;
+  final String? couponCode;
+  final double discountAmount;
+
+  const PaymentVerifyRequest({
+    required this.razorpayOrderId,
+    required this.razorpayPaymentId,
+    required this.razorpaySignature,
+    required this.orderId,
+    required this.amount,
+    required this.subtotal,
+    required this.shippingCharges,
+    required this.items,
+    required this.shippingAddress,
+    this.couponCode,
+    this.discountAmount = 0,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'razorpay_order_id': razorpayOrderId,
+        'razorpay_payment_id': razorpayPaymentId,
+        'razorpay_signature': razorpaySignature,
+        'orderId': orderId,
+        'amount': amount,
+        'subtotal': subtotal,
+        'shippingCharges': shippingCharges,
+        'items': items.map((i) => i.toJson()).toList(),
+        'shippingAddress': shippingAddress,
+        'couponCode': couponCode,
+        'discountAmount': discountAmount,
+      };
+}
+
 class CartItemRequest {
   final String productId;
   final String productName;
