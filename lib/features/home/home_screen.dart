@@ -8,10 +8,13 @@ import '../../core/widgets/shimmer_loading.dart';
 import '../../presentation/providers/products_provider.dart';
 import '../../presentation/providers/orders_provider.dart';
 import '../../presentation/providers/location_provider.dart';
+import '../../presentation/providers/content_provider.dart';
 import '../../presentation/navigation/app_router.dart';
 import 'widgets/banner_slider.dart';
 import 'widgets/featured_products_section.dart';
 import 'widgets/combo_highlights_section.dart';
+import 'widgets/blogs_section.dart';
+import 'widgets/testimonials_section.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -33,6 +36,8 @@ class HomeScreen extends ConsumerWidget {
           ref.invalidate(productsProvider);
           ref.invalidate(combosProvider);
           ref.invalidate(siteConfigProvider);
+          ref.invalidate(blogsProvider);
+          ref.invalidate(testimonialsProvider);
           await Future.delayed(const Duration(milliseconds: 800));
         },
         child: CustomScrollView(
@@ -195,11 +200,25 @@ class HomeScreen extends ConsumerWidget {
             // Bestseller products grid
             const _BestsellerGrid(),
 
+            // Blogs Section
+            SliverToBoxAdapter(
+              child: const BlogsSection()
+                  .animate()
+                  .fadeIn(delay: 600.ms, duration: 400.ms),
+            ),
+
+            // Testimonials Section
+            SliverToBoxAdapter(
+              child: const TestimonialsSection()
+                  .animate()
+                  .fadeIn(delay: 700.ms, duration: 400.ms),
+            ),
+
             // Why choose us
             SliverToBoxAdapter(
               child: const _WhyChooseUs()
                   .animate()
-                  .fadeIn(delay: 600.ms, duration: 400.ms),
+                  .fadeIn(delay: 800.ms, duration: 400.ms),
             ),
 
             // Bottom padding

@@ -12,11 +12,47 @@ import '../../presentation/providers/orders_provider.dart';
 import '../../presentation/navigation/app_router.dart';
 import 'widgets/order_timeline.dart';
 
-class OrdersScreen extends ConsumerWidget {
+// ── Filter definition ─────────────────────────────────────────────────────────
+
+class _FilterOption {
+  final String? status; // null = All
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  const _FilterOption({
+    required this.status,
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+}
+
+const _kFilters = [
+  _FilterOption(status: null,               label: 'All',              icon: Icons.receipt_long_rounded,    color: AppColors.primaryBrown),
+  _FilterOption(status: 'pending',          label: 'Order Placed',     icon: Icons.radio_button_checked,    color: AppColors.primaryGold),
+  _FilterOption(status: 'confirmed',        label: 'Confirmed',        icon: Icons.verified_rounded,         color: AppColors.primaryGold),
+  _FilterOption(status: 'processing',       label: 'Processing',       icon: Icons.autorenew_rounded,        color: AppColors.primaryGold),
+  _FilterOption(status: 'shipped',          label: 'Shipped',          icon: Icons.local_shipping_rounded,   color: AppColors.info),
+  _FilterOption(status: 'out_for_delivery', label: 'Out for Delivery', icon: Icons.delivery_dining_rounded,  color: AppColors.info),
+  _FilterOption(status: 'delivered',        label: 'Delivered',        icon: Icons.check_circle_rounded,     color: AppColors.accentGreen),
+  _FilterOption(status: 'cancelled',        label: 'Cancelled',        icon: Icons.cancel_rounded,           color: AppColors.error),
+];
+
+// ── Orders Screen ─────────────────────────────────────────────────────────────
+
+class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
+}
+
+class _OrdersScreenState extends ConsumerState<OrdersScreen> {
+  String? _selectedStatus; // null = show all
+
+  @override
+  Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
     final ordersAsync = ref.watch(ordersProvider);
 
@@ -80,6 +116,13 @@ class OrdersScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: AppColors.backgroundCream,
         title: Text('My Orders', style: AppTextStyles.headingXL),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(56),
+          child: _FilterBar(
+            selected: _selectedStatus,
+            onSelected: (status) => setState(() => _selectedStatus = status),
+          ),
+        ),
       ),
       body: RefreshIndicator(
         color: AppColors.primaryBrown,
@@ -89,13 +132,28 @@ class OrdersScreen extends ConsumerWidget {
         },
         child: ordersAsync.when(
           data: (orders) {
-            if (orders.isEmpty) {
-              return const _EmptyOrders();
+            if (orders.isEmpty) return const _EmptyOrders();
+
+            final filtered = _selectedStatus == null
+                ? orders
+                : orders
+                    .where((o) =>
+                        o.orderStatus.toLowerCase() == _selectedStatus)
+                    .toList();
+
+            if (filtered.isEmpty) {
+              return _EmptyFiltered(
+                label: _kFilters
+                    .firstWhere((f) => f.status == _selectedStatus)
+                    .label,
+                onClear: () => setState(() => _selectedStatus = null),
+              );
             }
+
             return ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-              itemCount: orders.length,
-              itemBuilder: (_, i) => _OrderCard(order: orders[i], index: i),
+              itemCount: filtered.length,
+              itemBuilder: (_, i) => _OrderCard(order: filtered[i], index: i),
             );
           },
           loading: () => ListView.builder(
@@ -103,6 +161,126 @@ class OrdersScreen extends ConsumerWidget {
             itemBuilder: (_, __) => const ListTileShimmer(),
           ),
           error: (e, _) => Center(child: Text('Error: $e')),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Filter bar ────────────────────────────────────────────────────────────────
+
+class _FilterBar extends StatelessWidget {
+  const _FilterBar({required this.selected, required this.onSelected});
+  final String? selected;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 56,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        itemCount: _kFilters.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final f = _kFilters[i];
+          final isActive = f.status == selected;
+          return GestureDetector(
+            onTap: () => onSelected(f.status),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isActive ? f.color : AppColors.surfaceWhite,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isActive ? f.color : AppColors.border,
+                  width: isActive ? 1.5 : 0.8,
+                ),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: f.color.withAlpha(50),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        )
+                      ]
+                    : [],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    f.icon,
+                    size: 14,
+                    color: isActive ? Colors.white : f.color,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    f.label,
+                    style: AppTextStyles.labelM.copyWith(
+                      color: isActive ? Colors.white : AppColors.textSecondary,
+                      fontWeight:
+                          isActive ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── Empty filtered state ──────────────────────────────────────────────────────
+
+class _EmptyFiltered extends StatelessWidget {
+  const _EmptyFiltered({required this.label, required this.onClear});
+  final String label;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 90,
+              height: 90,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF5E6CC),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.filter_list_off_rounded,
+                  size: 42, color: AppColors.primaryBrown),
+            ).animate().scale(duration: 400.ms, curve: Curves.elasticOut),
+            const SizedBox(height: 20),
+            Text('No "$label" orders',
+                    style: AppTextStyles.headingL, textAlign: TextAlign.center)
+                .animate()
+                .fadeIn(delay: 150.ms),
+            const SizedBox(height: 8),
+            Text(
+              'You don\'t have any orders with\nthis status yet.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyM
+                  .copyWith(color: AppColors.textSecondary),
+            ).animate().fadeIn(delay: 250.ms),
+            const SizedBox(height: 24),
+            TextButton.icon(
+              onPressed: onClear,
+              icon: const Icon(Icons.clear_rounded, size: 16),
+              label: const Text('Clear filter'),
+              style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primaryBrown),
+            ).animate().fadeIn(delay: 350.ms),
+          ],
         ),
       ),
     );

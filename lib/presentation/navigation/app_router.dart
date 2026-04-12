@@ -11,6 +11,8 @@ import '../../features/checkout/checkout_screen.dart';
 import '../../features/orders/orders_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/profile/addresses_screen.dart';
+import '../../features/profile/notifications_screen.dart';
+import '../../features/home/blog_detail_screen.dart';
 import '../../presentation/providers/orders_provider.dart';
 import 'main_shell.dart';
 
@@ -34,9 +36,12 @@ class AppRoutes {
   static const orders = '/orders';
   static const profile = '/profile';
   static const addresses = '/addresses';
+  static const notifications = '/notifications';
+  static const blogDetailBase = '/blog';
 
   static String productDetailPath(String slug) => '/product/$slug';
   static String comboDetailPath(String id) => '/combo/$id';
+  static String blogDetail(String slug) => '/blog/$slug';
 }
 
 // ─── Router Provider ─────────────────────────────────────────────────────────
@@ -117,6 +122,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.addresses,
         pageBuilder: (context, state) =>
             _slideTransition(state, const AddressesScreen()),
+      ),
+
+      // Blog Detail
+      GoRoute(
+        path: '/blog/:slug',
+        pageBuilder: (context, state) {
+          final slug = state.pathParameters['slug']!;
+          return _slideTransition(state, BlogDetailScreen(blogSlug: slug));
+        },
+      ),
+
+      // Notifications
+      GoRoute(
+        path: AppRoutes.notifications,
+        pageBuilder: (context, state) =>
+            _slideTransition(state, const NotificationsScreen()),
       ),
 
       // Checkout

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../presentation/providers/orders_provider.dart';
+import '../../presentation/providers/notifications_provider.dart';
 import '../../presentation/navigation/app_router.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -175,7 +176,8 @@ class ProfileScreen extends ConsumerWidget {
                     _MenuItem(
                       icon: Icons.notifications_rounded,
                       label: 'Notifications',
-                      onTap: () {},
+                      badge: ref.watch(unreadCountProvider),
+                      onTap: () => context.push(AppRoutes.notifications),
                     ),
                   ]),
 
@@ -342,6 +344,21 @@ class _MenuGroup extends StatelessWidget {
                               .copyWith(color: item.labelColor),
                         ),
                       ),
+                      if (item.badge > 0)
+                        Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryGold,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            item.badge > 99 ? '99+' : '${item.badge}',
+                            style: AppTextStyles.badge
+                                .copyWith(color: Colors.white),
+                          ),
+                        ),
                       Icon(
                         Icons.arrow_forward_ios_rounded,
                         size: 14,
@@ -387,6 +404,7 @@ class _MenuItem {
   final VoidCallback onTap;
   final Color? iconColor;
   final Color? labelColor;
+  final int badge;
 
   const _MenuItem({
     required this.icon,
@@ -394,5 +412,6 @@ class _MenuItem {
     required this.onTap,
     this.iconColor,
     this.labelColor,
+    this.badge = 0,
   });
 }

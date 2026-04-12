@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'core/services/analytics_service.dart';
+import 'core/services/fcm_service.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'presentation/navigation/app_router.dart';
@@ -15,7 +16,9 @@ Future<void> main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  runApp(const ProviderScope(child: CountryFlourApp()));
+  final container = ProviderContainer();
+  FcmService.setContainer(container);
+  runApp(UncontrolledProviderScope(container: container, child: const CountryFlourApp()));
 }
 
 class CountryFlourApp extends ConsumerStatefulWidget {

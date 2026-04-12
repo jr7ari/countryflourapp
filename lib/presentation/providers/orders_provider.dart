@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/fcm_service.dart';
 import '../../data/models/order_model.dart';
 import '../../data/models/address_model.dart';
 import '../../data/repositories/order_repository.dart';
@@ -224,6 +225,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         phone: prefs.getString(_kPhone),
         photoUrl: prefs.getString(_kPhotoUrl),
       );
+      // Re-register FCM token on every app start for already-logged-in users
+      FcmService.init(token);
     } else {
       state = const AuthState(isInitialized: true);
     }
@@ -310,11 +313,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = newState;
     await _saveAuth(newState);
     debugPrint('[AUTH] Login complete ✓');
+    // Register FCM token after fresh login
+    if (newState.token != null) FcmService.init(newState.token!);
   }
 
   Future<void> signOut() async {
     state = const AuthState(isInitialized: true); // clear immediately
     await _clearSaved();
+    // Delete FCM token so this device stops receiving notifications after logout
+    await FcmService.dispose();
     try { await _googleSignIn.signOut(); } catch (_) {}
   }
 
