@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/services/analytics_service.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../data/models/order_model.dart';
@@ -374,7 +375,10 @@ class _OrderCardState extends ConsumerState<_OrderCard> {
                   await ref.read(cancelOrderProvider.notifier).cancel(order.orderId);
               if (!mounted) return;
               setState(() => _isCancelling = false);
-              if (success) ref.invalidate(ordersProvider);
+              if (success) {
+                ref.invalidate(ordersProvider);
+                AnalyticsService.logCancelOrder(order.orderId);
+              }
               messenger.showSnackBar(SnackBar(
                 content: Text(success
                     ? 'Order #${order.orderId} cancelled'
@@ -593,6 +597,7 @@ class _OrderDetailSheetState extends ConsumerState<_OrderDetailSheet> {
                   .cancel(order.orderId);
               if (!mounted) return;
               if (success) {
+                AnalyticsService.logCancelOrder(order.orderId);
                 // Pop sheet with true — parent will refresh the orders list
                 Navigator.of(context).pop(true);
                 return;

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/services/analytics_service.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../presentation/providers/products_provider.dart';
+import '../../presentation/navigation/app_router.dart';
 import 'widgets/product_card.dart';
 import 'widgets/combo_card.dart';
 
@@ -16,11 +19,34 @@ class ProductsScreen extends ConsumerStatefulWidget {
 
 class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   final _searchController = TextEditingController();
+  GoRouter? _router;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _router = GoRouter.of(context);
+      _router!.routeInformationProvider.addListener(_onRouteChanged);
+    });
+  }
 
   @override
   void dispose() {
+    _router?.routeInformationProvider.removeListener(_onRouteChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onRouteChanged() {
+    if (!mounted) return;
+    final path = _router!.routeInformationProvider.value.uri.path;
+    if (path != AppRoutes.products) {
+      _searchController.clear();
+      ref.read(searchQueryProvider.notifier).state = '';
+      ref.invalidate(productsProvider);
+      ref.invalidate(combosProvider);
+    }
   }
 
   Future<void> _refresh() async {
@@ -58,8 +84,12 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                   child: TextField(
                     controller: _searchController,
-                    onChanged: (v) =>
-                        ref.read(searchQueryProvider.notifier).state = v,
+                    onChanged: (v) {
+                      ref.read(searchQueryProvider.notifier).state = v;
+                      if (v.trim().length >= 3) {
+                        AnalyticsService.logSearch(v.trim());
+                      }
+                    },
                     decoration: InputDecoration(
                       hintText: 'Search flours, categories...',
                       prefixIcon: const Icon(Icons.search_rounded,

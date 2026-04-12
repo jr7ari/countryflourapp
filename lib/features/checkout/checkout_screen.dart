@@ -8,6 +8,7 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/services/analytics_service.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_button.dart';
 import '../../data/models/address_model.dart';
@@ -70,6 +71,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen>
     final isLocal = ref.read(isLocalDeliveryProvider);
     final shipping = isLocal ? CartState.localDeliveryFee : 0.0;
     final total = ref.read(checkoutTotalProvider);
+
+    AnalyticsService.logBeginCheckout(cart.items, total);
 
     // Build items list
     final items = cart.items
@@ -158,6 +161,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen>
       final order = await repo.verifyPayment(verifyRequest);
 
       if (!mounted) return;
+      AnalyticsService.logPurchase(order);
       ref.read(cartProvider.notifier).clear();
       ref.invalidate(ordersProvider); // refresh orders list before navigating
       setState(() => _isPlacingOrder = false);

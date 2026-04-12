@@ -53,35 +53,35 @@ class MainShell extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _NavItem(
+                Expanded(child: _NavItem(
                   icon: Icons.home_rounded,
                   label: 'Home',
                   isSelected: currentIndex == 0,
                   onTap: () => context.go(AppRoutes.home),
-                ),
-                _NavItem(
+                )),
+                Expanded(child: _NavItem(
                   icon: Icons.grid_view_rounded,
                   label: 'Products',
                   isSelected: currentIndex == 1,
                   onTap: () => context.go(AppRoutes.products),
-                ),
-                _NavItemCart(
+                )),
+                Expanded(child: _NavItemCart(
                   isSelected: currentIndex == 2,
                   cartCount: cartCount,
                   onTap: () => context.go(AppRoutes.cart),
-                ),
-                _NavItem(
+                )),
+                Expanded(child: _NavItem(
                   icon: Icons.receipt_long_rounded,
                   label: 'Orders',
                   isSelected: currentIndex == 3,
                   onTap: () => context.go(AppRoutes.orders),
-                ),
-                _NavItem(
+                )),
+                Expanded(child: _NavItem(
                   icon: Icons.person_rounded,
                   label: 'Profile',
                   isSelected: currentIndex == 4,
                   onTap: () => context.go(AppRoutes.profile),
-                ),
+                )),
               ],
             ),
           ),
@@ -110,32 +110,38 @@ class _NavItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        decoration: isSelected
-            ? BoxDecoration(
-                color: const Color(0xFFF5E6CC),
-                borderRadius: BorderRadius.circular(12),
-              )
-            : null,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 22,
-              color: isSelected ? AppColors.primaryBrown : AppColors.textHint,
+      child: SizedBox(
+        width: double.infinity,
+        height: double.infinity,
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: isSelected
+                ? BoxDecoration(
+                    color: const Color(0xFFF5E6CC),
+                    borderRadius: BorderRadius.circular(12),
+                  )
+                : null,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 22,
+                  color: isSelected ? AppColors.primaryBrown : AppColors.textHint,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: AppTextStyles.labelS.copyWith(
+                    color: isSelected ? AppColors.primaryBrown : AppColors.textHint,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: AppTextStyles.labelS.copyWith(
-                color: isSelected ? AppColors.primaryBrown : AppColors.textHint,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -158,7 +164,11 @@ class _NavItemCart extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
+      child: SizedBox(
+        width: double.infinity,
+        height: double.infinity,
+        child: Center(
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: isSelected
@@ -195,6 +205,8 @@ class _NavItemCart extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
         ),
       ),
     );

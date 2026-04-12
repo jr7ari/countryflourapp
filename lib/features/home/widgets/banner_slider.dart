@@ -6,14 +6,12 @@ import '../../../core/constants/app_text_styles.dart';
 class _BannerData {
   final String title;
   final String subtitle;
-  final String cta;
   final List<Color> gradientColors;
   final IconData icon;
 
   const _BannerData({
     required this.title,
     required this.subtitle,
-    required this.cta,
     required this.gradientColors,
     required this.icon,
   });
@@ -23,21 +21,18 @@ final _banners = [
   _BannerData(
     title: 'Freshly Milled\nGoodness',
     subtitle: 'Traditional chakki atta for the softest rotis',
-    cta: 'Shop Atta',
     gradientColors: [const Color(0xFF6B4226), const Color(0xFFC8860A)],
     icon: Icons.grain_rounded,
   ),
   _BannerData(
     title: 'Combo\nDeals',
     subtitle: 'Save up to 25% with our family packs',
-    cta: 'View Combos',
     gradientColors: [const Color(0xFFE85D26), const Color(0xFFFF9A3C)],
     icon: Icons.inventory_2_rounded,
   ),
   _BannerData(
     title: 'Health\nFirst',
     subtitle: 'Multigrain & millet flours for wellness',
-    cta: 'Explore',
     gradientColors: [const Color(0xFF2E7D32), const Color(0xFF66BB6A)],
     icon: Icons.eco_rounded,
   ),
@@ -182,21 +177,6 @@ class _BannerCard extends StatelessWidget {
                         banner.subtitle,
                         style: AppTextStyles.bodyS.copyWith(
                           color: Colors.white.withAlpha(200),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Text(
-                          banner.cta,
-                          style: AppTextStyles.labelL.copyWith(
-                            color: banner.gradientColors.first,
-                            fontWeight: FontWeight.w700,
-                          ),
                         ),
                       ),
                     ],

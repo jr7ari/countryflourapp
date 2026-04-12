@@ -314,13 +314,6 @@ class _ComboBreakdown extends StatelessWidget {
                           .copyWith(color: AppColors.textPrimary),
                     ),
                   ),
-                  Text(
-                    Formatters.currency(item.totalMRP),
-                    style: AppTextStyles.labelL.copyWith(
-                      color: AppColors.textSecondary,
-                      decoration: TextDecoration.lineThrough,
-                    ),
-                  ),
                 ],
               ),
             ),

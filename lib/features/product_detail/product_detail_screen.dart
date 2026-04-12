@@ -13,6 +13,7 @@ import '../../core/widgets/badge_widget.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/add_or_counter_button.dart';
 import '../../core/widgets/shimmer_loading.dart';
+import '../../core/services/analytics_service.dart';
 import '../../data/models/product_model.dart';
 import '../../presentation/providers/products_provider.dart';
 import '../../presentation/providers/cart_provider.dart';
@@ -33,6 +34,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
   int _quantity = 1;
   late final TabController _tabController;
   final _pageController = PageController();
+  bool _viewTracked = false;
 
   @override
   void initState() {
@@ -50,6 +52,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
   @override
   Widget build(BuildContext context) {
     final productAsync = ref.watch(productBySlugProvider(widget.slug));
+
+    if (!_viewTracked) {
+      productAsync.whenData((product) {
+        _viewTracked = true;
+        WidgetsBinding.instance.addPostFrameCallback(
+            (_) => AnalyticsService.logViewProduct(product));
+      });
+    }
 
     return Scaffold(
       backgroundColor: AppColors.backgroundCream,

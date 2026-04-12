@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/services/analytics_service.dart';
 import '../../presentation/providers/orders_provider.dart';
 import '../../presentation/navigation/app_router.dart';
 
@@ -22,6 +23,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       await ref.read(authProvider.notifier).signInWithGoogle();
       if (!mounted) return;
+      AnalyticsService.logLogin();
       context.go(AppRoutes.home);
     } catch (e) {
       if (!mounted) return;

@@ -9,6 +9,8 @@ abstract class IOrderRepository {
   Future<bool> cancelOrder(String orderId);
   Future<List<Address>> getAddresses();
   Future<Address> createAddress(AddressRequest body);
+  Future<Address> updateAddress(String addressId, AddressRequest body);
+  Future<void> deleteAddress(String addressId);
   Future<double> getShippingRate(Map<String, dynamic> body);
   Future<RazorpayOrderResponse> createRazorpayOrder(CreateOrderRequest request);
   Future<Order> verifyPayment(PaymentVerifyRequest request);
@@ -108,6 +110,33 @@ class OrderRepository implements IOrderRepository {
     }
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     return Address.fromJson(body['address'] ?? body);
+  }
+
+  @override
+  Future<Address> updateAddress(String addressId, AddressRequest request) async {
+    final res = await http.patch(
+      Uri.parse('$_base/addresses/$addressId'),
+      headers: _headers,
+      body: jsonEncode(request.toJson()),
+    );
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw Exception(
+          'Failed to update address (${res.statusCode}): ${res.body}');
+    }
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return Address.fromJson(body['address'] ?? body);
+  }
+
+  @override
+  Future<void> deleteAddress(String addressId) async {
+    final res = await http.delete(
+      Uri.parse('$_base/addresses/$addressId'),
+      headers: _headers,
+    );
+    if (res.statusCode != 200 && res.statusCode != 204) {
+      throw Exception(
+          'Failed to delete address (${res.statusCode}): ${res.body}');
+    }
   }
 
   // ─── Shipping ───────────────────────────────────────────────────────────────

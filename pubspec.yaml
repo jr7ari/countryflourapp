@@ -45,6 +45,10 @@ dependencies:
   # Payment
   razorpay_flutter: ^1.3.6
 
+  # Firebase & Analytics
+  firebase_core: ^3.6.0
+  firebase_analytics: ^11.3.3
+
   # Utilities
   intl: ^0.19.0
 

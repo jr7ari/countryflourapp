@@ -7,23 +7,39 @@ import '../../core/constants/app_text_styles.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/badge_widget.dart';
+import '../../core/services/analytics_service.dart';
 import '../../data/models/combo_model.dart';
 import '../../presentation/providers/products_provider.dart';
 import '../../presentation/providers/cart_provider.dart';
 import '../../presentation/navigation/app_router.dart';
 
-class ComboDetailScreen extends ConsumerWidget {
+class ComboDetailScreen extends ConsumerStatefulWidget {
   const ComboDetailScreen({super.key, required this.comboId});
   final String comboId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final comboAsync = ref.watch(comboByIdProvider(comboId));
+  ConsumerState<ComboDetailScreen> createState() => _ComboDetailScreenState();
+}
+
+class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
+  bool _viewTracked = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final comboAsync = ref.watch(comboByIdProvider(widget.comboId));
+
+    if (!_viewTracked) {
+      comboAsync.whenData((combo) {
+        _viewTracked = true;
+        WidgetsBinding.instance.addPostFrameCallback(
+            (_) => AnalyticsService.logViewCombo(combo));
+      });
+    }
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) context.go('/home');
+        if (!didPop) context.go(AppRoutes.products);
       },
       child: Scaffold(
         backgroundColor: AppColors.backgroundCream,
@@ -266,13 +282,6 @@ class _ComboDetailBody extends ConsumerWidget {
 
                 const SizedBox(height: 20),
 
-                // MRP vs Offer comparison
-                _PriceComparisonTable(combo: combo)
-                    .animate()
-                    .fadeIn(delay: 400.ms),
-
-                const SizedBox(height: 20),
-
                 // Quantity + Add to Cart
                 Row(
                   children: [
@@ -364,58 +373,3 @@ class _ComboItemRow extends StatelessWidget {
   }
 }
 
-class _PriceComparisonTable extends StatelessWidget {
-  const _PriceComparisonTable({required this.combo});
-  final Combo combo;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.comboSecondary,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.comboPrimary.withAlpha(40)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Total MRP', style: AppTextStyles.bodyM.copyWith(color: AppColors.textSecondary)),
-              Text(
-                Formatters.currency(combo.mrp),
-                style: AppTextStyles.bodyM.copyWith(
-                  decoration: TextDecoration.lineThrough,
-                  color: AppColors.textHint,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Combo Discount', style: AppTextStyles.bodyM.copyWith(color: AppColors.accentGreen)),
-              Text(
-                '- ${Formatters.currency(combo.savings)}',
-                style: AppTextStyles.bodyM.copyWith(color: AppColors.accentGreen, fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
-          const Divider(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('You Pay', style: AppTextStyles.headingM),
-              Text(
-                Formatters.currency(combo.offerPrice),
-                style: AppTextStyles.priceM.copyWith(color: AppColors.comboPrimary),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}

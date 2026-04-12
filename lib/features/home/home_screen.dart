@@ -530,7 +530,7 @@ class _WhyChooseUs extends StatelessWidget {
       (Icons.grain_rounded, 'Freshly Milled', 'Milled when you order'),
       (Icons.eco_rounded, '100% Natural', 'No preservatives, no additives'),
       (Icons.local_shipping_rounded, 'Fresh Delivery', 'Mill-to-door freshness'),
-      (Icons.verified_rounded, 'Quality Tested', 'Every batch quality checked'),
+      (Icons.verified_rounded, 'Quality Tested', 'Every packet quality checked'),
     ];
 
     return Container(

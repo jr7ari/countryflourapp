@@ -68,6 +68,42 @@ class CartItem {
   double get savingsPerUnit => unitMRP - unitPrice;
   double get totalSavings => savingsPerUnit * quantity;
 
+  // ─── Bulk pricing ─────────────────────────────────────────────────────────
+
+  /// Effective line total after applying bulk pricing tiers (greedy, largest first).
+  double get effectiveLineTotal {
+    if (isCombo || product == null || product!.combos.isEmpty) return totalPrice;
+    return _bulkLineTotal(product!.combos, variant!.price, quantity);
+  }
+
+  /// Savings purely from the bulk tier (on top of any variant-level discount).
+  double get bulkSavings => totalPrice - effectiveLineTotal;
+
+  /// The largest bulk tier currently active for this line (null if none applies).
+  ProductBulkCombo? get appliedBulkTier {
+    if (isCombo || product == null || product!.combos.isEmpty) return null;
+    final tiers = [...product!.combos]..sort((a, b) => b.qty.compareTo(a.qty));
+    for (final tier in tiers) {
+      if (quantity >= tier.qty) return tier;
+    }
+    return null;
+  }
+
+  static double _bulkLineTotal(
+      List<ProductBulkCombo> tiers, double regularPrice, int qty) {
+    final sorted = [...tiers]..sort((a, b) => b.qty.compareTo(a.qty));
+    double total = 0;
+    int remaining = qty;
+    for (final tier in sorted) {
+      if (remaining >= tier.qty) {
+        final packs = remaining ~/ tier.qty;
+        total += packs * tier.offerPrice;
+        remaining -= packs * tier.qty;
+      }
+    }
+    return total + remaining * regularPrice;
+  }
+
   /// Parse a weight string → kilograms
   /// Handles: "1kg", "1.5kg", "500g", "500gm", "1 Kg", "250 G", "1000gms"
   static double parseWeightKg(String w) {

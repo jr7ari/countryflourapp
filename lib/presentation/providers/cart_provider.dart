@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/services/analytics_service.dart';
 import '../../data/models/cart_item_model.dart';
 import '../../data/models/product_model.dart';
 import '../../data/models/combo_model.dart';
@@ -37,7 +38,7 @@ class CartState {
       items.fold(0.0, (sum, item) => sum + item.lineWeightKg);
 
   double get subtotal =>
-      items.fold(0.0, (sum, item) => sum + item.totalPrice);
+      items.fold(0.0, (sum, item) => sum + item.effectiveLineTotal);
 
   double get totalMRP =>
       items.fold(0.0, (sum, item) => sum + item.totalMRP);
@@ -130,6 +131,7 @@ class CartNotifier extends StateNotifier<CartState> {
     } else {
       state = state.copyWith(items: [...state.items, newItem]);
     }
+    AnalyticsService.logAddProduct(product, variant, quantity);
     return CartAddResult.success;
   }
 
@@ -160,6 +162,7 @@ class CartNotifier extends StateNotifier<CartState> {
     } else {
       state = state.copyWith(items: [...state.items, newItem]);
     }
+    AnalyticsService.logAddCombo(combo, quantity);
     return CartAddResult.success;
   }
 
@@ -185,6 +188,11 @@ class CartNotifier extends StateNotifier<CartState> {
   }
 
   void removeItem(String cartId) {
+    final item = state.items.firstWhere(
+      (i) => i.cartId == cartId,
+      orElse: () => throw StateError('Item not found'),
+    );
+    AnalyticsService.logRemoveFromCart(item);
     state = state.copyWith(
       items: state.items.where((i) => i.cartId != cartId).toList(),
     );

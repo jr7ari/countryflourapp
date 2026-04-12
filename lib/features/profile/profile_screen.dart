@@ -225,7 +225,26 @@ class ProfileScreen extends ConsumerWidget {
                     ]),
                   ],
 
+                  // Brand footer — logo + version
                   const SizedBox(height: 40),
+                  Center(
+                    child: Column(
+                      children: [
+                        Image.asset(
+                          'assets/images/cf.png',
+                          height: 64,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Version 1.0.0',
+                          style: AppTextStyles.labelS.copyWith(
+                            color: AppColors.textHint,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
                 ],
               ).animate().fadeIn(delay: 400.ms),
             ),

@@ -70,6 +70,54 @@ final createAddressProvider =
   return CreateAddressNotifier(repo);
 });
 
+// ─── Update Address ───────────────────────────────────────────────────────────
+
+class UpdateAddressNotifier extends StateNotifier<AsyncValue<Address?>> {
+  final OrderRepository _repo;
+  UpdateAddressNotifier(this._repo) : super(const AsyncValue.data(null));
+
+  Future<bool> update(String addressId, AddressRequest request) async {
+    state = const AsyncValue.loading();
+    try {
+      final address = await _repo.updateAddress(addressId, request);
+      state = AsyncValue.data(address);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+}
+
+final updateAddressProvider =
+    StateNotifierProvider<UpdateAddressNotifier, AsyncValue<Address?>>((ref) {
+  return UpdateAddressNotifier(ref.watch(orderRepositoryProvider));
+});
+
+// ─── Delete Address ───────────────────────────────────────────────────────────
+
+class DeleteAddressNotifier extends StateNotifier<AsyncValue<void>> {
+  final OrderRepository _repo;
+  DeleteAddressNotifier(this._repo) : super(const AsyncValue.data(null));
+
+  Future<bool> delete(String addressId) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repo.deleteAddress(addressId);
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+}
+
+final deleteAddressProvider =
+    StateNotifierProvider<DeleteAddressNotifier, AsyncValue<void>>((ref) {
+  return DeleteAddressNotifier(ref.watch(orderRepositoryProvider));
+});
+
 // ─── Cancel Order ─────────────────────────────────────────────────────────────
 
 class CancelOrderNotifier extends StateNotifier<AsyncValue<void>> {

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/services/analytics_service.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_button.dart';
 import '../../data/models/cart_item_model.dart';
@@ -13,12 +14,26 @@ import '../../presentation/providers/cart_provider.dart';
 import '../../presentation/providers/orders_provider.dart';
 import '../../presentation/navigation/app_router.dart';
 
-class CartScreen extends ConsumerWidget {
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends ConsumerState<CartScreen> {
+  bool _viewTracked = false;
+
+  @override
+  Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
+
+    // Track view_cart once when cart has items
+    if (!_viewTracked && cart.items.isNotEmpty) {
+      _viewTracked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) =>
+          AnalyticsService.logViewCart(cart.items, cart.grandTotal));
+    }
 
     if (cart.isEmpty) {
       return Scaffold(
@@ -178,13 +193,32 @@ class CartItemWidget extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          Formatters.currency(item.unitPrice),
+                          Formatters.currency(item.effectiveLineTotal),
                           style: AppTextStyles.priceS,
                         ),
-                        if (item.savingsPerUnit > 0)
+                        if (item.appliedBulkTier != null)
+                          Container(
+                            margin: const EdgeInsets.only(top: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.accentGreen.withAlpha(20),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                  color: AppColors.accentGreen.withAlpha(80)),
+                            ),
+                            child: Text(
+                              '${item.appliedBulkTier!.qty} for '
+                              '${Formatters.currency(item.appliedBulkTier!.offerPrice)}',
+                              style: AppTextStyles.labelS
+                                  .copyWith(color: AppColors.accentGreen),
+                            ),
+                          )
+                        else if (item.savingsPerUnit > 0)
                           Text(
                             'Save ${Formatters.currency(item.savingsPerUnit)}',
-                            style: AppTextStyles.labelS.copyWith(color: AppColors.accentGreen),
+                            style: AppTextStyles.labelS
+                                .copyWith(color: AppColors.accentGreen),
                           ),
                       ],
                     ),
